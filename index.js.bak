@@ -80,51 +80,22 @@ async function autoUpdateStatus(message) {
     } else {
         autoUpdateInterval = setInterval(async () => {
             const serverStatus = await queryServerStatus();
-
-            // 如果伺服器離線，且上次狀態不是離線，則更新為「伺服器不在線」
-            if (!serverStatus) {
-                if (lastServerStatus !== null) { // 僅當狀態變更為離線時才更新
-                    const offlineEmbed = new EmbedBuilder()
-                        .setTitle(SERVER_NAME)
-                        .setDescription("伺服器不在線")
-                        .setColor(0xFF0000)
-                        .setFooter({ text: `更新時間: ${new Date(Date.now() + 8 * 60 * 60 * 1000).toLocaleTimeString()}` });
-
-                    const messages = await message.channel.messages.fetch({ limit: 1 });
-                    const lastMessage = messages.first();
-                    
-                    if (lastMessage && lastMessage.author.id === discordClient.user.id) {
-                        await lastMessage.edit({ embeds: [offlineEmbed] });
-                    } else {
-                        await message.channel.send({ embeds: [offlineEmbed] });
-                    }
-
-                    lastServerStatus = null; // 更新狀態為離線
-                }
-                return;
-            }
-
-            // 當伺服器在線且狀態改變時更新嵌入
             if (!lastServerStatus ||
                 serverStatus.version !== lastServerStatus.version ||
                 serverStatus.online !== lastServerStatus.online ||
                 serverStatus.max !== lastServerStatus.max ||
                 serverStatus.motd !== lastServerStatus.motd) {
-
                 const embed = createStatusEmbed(serverStatus);
                 const messages = await message.channel.messages.fetch({ limit: 1 });
                 const lastMessage = messages.first();
-
                 if (lastMessage && lastMessage.author.id === discordClient.user.id) {
                     await lastMessage.edit({ embeds: [embed] });
                 } else {
                     await message.channel.send({ embeds: [embed] });
                 }
-
-                lastServerStatus = serverStatus; // 更新狀態為最新
+                lastServerStatus = serverStatus; // 更新上次狀態
             }
         }, 10000);
-
         message.channel.send('自動更新已啟動。');
     }
 }
