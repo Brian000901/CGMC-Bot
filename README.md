@@ -25,7 +25,7 @@ SERVER_PORT=Minecraft伺服器端口號（默認為25565）
 RCON_PORT=RCON伺服器端口號（默認為25575）
 RCON_PASSWORD=RCON密碼
 ADMIN_ID=管理員ID列表，使用逗號分隔
-SERVER_NAME=Minecraft伺服器名稱（可選，默認為"Minecraft Server"）
+SERVER_NAME=Minecraft伺服器名稱（可選，默認為"A Minecraft Server"）
 ```
 
 ## 使用方法
