@@ -61,6 +61,6 @@ node index.js
 
 ## 貢獻
 
-歡迎提交 Issues 和 Pull Requests 來改進這個專案。如有任何問題或建議，請聯繫專案負責人
+歡迎提交 Issues 和 Pull Requests 來改進<sup>屎山代碼</sup>這個專案。如有任何問題或建議，請聯繫專案負責人
 
 > 這是AI生的owo
