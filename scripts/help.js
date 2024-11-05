@@ -6,7 +6,6 @@ module.exports = async function(message) {
         /ping - 看  看  機  器  人  是  不  是  活  的
         !!help - 查  看  這  個  列  表
         !status - 查  看  伺  服  器  狀  態
-        !rate [內 容 ] [最 小 值 ] [最 大 值 ] [時 間 上 限 (秒 )] - 評  分  指  令
         **——以  下  指  令  需  要  權  限  ——**
         !autoupdate - 自  動  更  新  伺  服  器  狀  態
         !console [指  令 ] - 執  行  RCON 指  令
