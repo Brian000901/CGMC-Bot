@@ -45,7 +45,7 @@ node index.js
 
 ## 注意事項
 
-如果 Minecraft 伺服器未啟用 RCON，部分功能將無法使用。例如，`!console` 指令需要 RCON 才能執行命令。
+如果 Minecraft 伺服器未啟用 RCON，部分功能將無法使用。例如`!console` 指令需要 RCON 才能執行命令。
 
 ## 腳本功能使用
 
