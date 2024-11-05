@@ -1,4 +1,3 @@
-```markdown
 # CGMC-Bot
 
 這是一個專為成功高中麥塊社設計的 Discord 機器人，用於管理和監控 Minecraft 伺服器。
@@ -11,7 +10,6 @@
 
 ```bash
 npm install
-```
 ```
 
 ### 2. 設定環境變量
