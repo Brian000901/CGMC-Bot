@@ -1,6 +1,6 @@
 # CGMC-Bot
 
-這是一個專為成功高中麥塊社設計的 Discord 機器人，用於管理和監控 Minecraft 伺服器。
+這是一個專為成功高中麥塊社設計的 Discord 機器人，用於管理和監控 Minecraft 伺服器，以及進行部分Minecraft伺服器跟Discord的互通。
 
 ## 安裝與設定
 
