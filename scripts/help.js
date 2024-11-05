@@ -2,14 +2,14 @@
 module.exports = async function(message) {
     if (message.content === '!!help') {
         const response = `
-        **可  使  用  的  指  令  列  表  ： **
-        /ping - 看  看  機  器  人  是  不  是  活  的
-        !!help - 查  看  這  個  列  表
-        !status - 查  看  伺  服  器  狀  態
-        **——以  下  指  令  需  要  權  限  ——**
-        !autoupdate - 自  動  更  新  伺  服  器  狀  態
-        !console [指  令 ] - 執  行  RCON 指  令
-        !reload - 重  新  載  入  腳  本
+        **可使用的指令列表：**
+        /ping - 看看機器人是不是活的
+        !!help - 查查看這個列表
+        !status - 查查看伺服器狀態
+        **——以下指令需要權限——**
+        !autoupdate - 自動更新伺服器狀態
+        !console [指令] - 執行RCON指令
+        !reload - 重新載入腳本
         `;
         message.channel.send(response);
     }
