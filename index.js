@@ -138,7 +138,7 @@ async function createStatusEmbed(serverStatus) {
         .setFooter({ text: `獲取時間: ${new Date(Date.now() + 8 * 60 * 60 * 1000).toLocaleTimeString()}` });
 
     if (attachment) {
-        embed.setImage('attachment://server_icon.png');
+        embed.setThumbnail('attachment://server_icon.png');
         return { embeds: [embed], files: [attachment] };
     }
 
