@@ -153,7 +153,9 @@ function loadScripts() {
     fs.readdirSync(scriptsFolder).forEach(file => {
         if (file.endsWith('.js')) {
             try {
-                const script = require(path.join(scriptsFolder, file));
+                const scriptPath = path.join(scriptsFolder, file);
+                delete require.cache[require.resolve(scriptPath)];
+                const script = require(scriptPath);
                 if (typeof script === 'function') {
                     discordClient.scriptHandlers[file] = script;
                 } else {
