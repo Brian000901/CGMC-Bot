@@ -216,6 +216,10 @@ discordClient.on('messageCreate', async (message) => {
         loadScripts();
         message.channel.send('腳本已重新載入。');
     }
+    if (message.content === '!ls') {
+        const scriptNames = Object.keys(discordClient.scriptHandlers);
+        message.channel.send(`已載入的腳本: ${scriptNames.join(', ')}`);
+    }
 });
 
 // 斜線指令處理
