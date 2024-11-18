@@ -217,7 +217,7 @@ discordClient.on('messageCreate', async (message) => {
         const scriptNames = Object.keys(discordClient.scriptHandlers);
         message.channel.send(`已載入的腳本: ${scriptNames.join(', ')}`);
     }
-    if (message.content === '!botstatus') {
+    if (message.content === '!botinfo') {
         const uptime = process.uptime();
         const uptimeString = `${Math.floor(uptime / 3600)}h ${Math.floor((uptime % 3600) / 60)}m ${Math.floor(uptime % 60)}s`;
         const latency = Date.now() - message.createdTimestamp;
