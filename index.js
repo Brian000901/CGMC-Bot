@@ -1,7 +1,7 @@
 require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
-const { Client, GatewayIntentBits, Partials, EmbedBuilder, REST, Routes } = require('discord.js');
+const { Client, GatewayIntentBits, Partials, EmbedBuilder, REST, Routes, AttachmentBuilder } = require('discord.js');
 const { Rcon } = require('rcon-client');
 const minecraftServerUtil = require('minecraft-server-util');
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
@@ -13,10 +13,12 @@ const RCON_PORT = parseInt(process.env.RCON_PORT, 10) || 25575;
 const RCON_PASSWORD = process.env.RCON_PASSWORD;
 const ADMIN_IDS = process.env.ADMIN_ID.split(',').map(id => id.trim());
 const SERVER_NAME = process.env.SERVER_NAME || "Minecraft Server";
+
 if (!DISCORD_TOKEN || !SERVER_IP || !SERVER_PORT || !RCON_PORT || !RCON_PASSWORD || !ADMIN_IDS) {
     console.error('請檢查.env檔案，確認所有變量均已設置');
     process.exit(1);
 }
+
 const discordClient = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -25,12 +27,15 @@ const discordClient = new Client({
     ],
     partials: [Partials.Channel],
 });
+
 discordClient.scriptHandlers = {};
+
 discordClient.once('ready', async () => {
     console.log(`已登入為${discordClient.user.tag}`);
     loadScripts();
     await registerSlashCommands();
 });
+
 async function queryServerStatus() {
     try {
         const result = await minecraftServerUtil.status(SERVER_IP, SERVER_PORT);
@@ -39,12 +44,14 @@ async function queryServerStatus() {
             online: result.players.online,
             max: result.players.max,
             motd: result.motd.clean,
+            favicon: result.favicon // Assuming this is where the base64 image is stored
         };
     } catch (error) {
         console.error('查詢伺服器狀態時發生錯誤:', error);
         return null;
     }
 }
+
 async function rconCommand(command) {
     const rcon = new Rcon({ host: SERVER_IP, port: RCON_PORT, password: RCON_PASSWORD });
     try {
@@ -53,13 +60,15 @@ async function rconCommand(command) {
         return response.length > 4000 ? '回應超過Discord字符數限制' : `\`\`\`${response}\`\`\``;
     } catch (error) {
         console.error('執行RCON命令時發生錯誤:', error);
-        return null;
+        return `RCON命令執行錯誤: ${error}`;
     } finally {
         rcon.end();
     }
 }
+
 let autoUpdateInterval;
 let lastServerStatus = null;
+
 async function autoUpdateStatus(message) {
     if (autoUpdateInterval) {
         clearInterval(autoUpdateInterval);
@@ -92,7 +101,7 @@ async function autoUpdateStatus(message) {
                 serverStatus.online !== lastServerStatus.online ||
                 serverStatus.max !== lastServerStatus.max ||
                 serverStatus.motd !== lastServerStatus.motd) {
-                const embed = createStatusEmbed(serverStatus);
+                const embed = await createStatusEmbed(serverStatus);
                 const messages = await message.channel.messages.fetch({ limit: 1 });
                 const lastMessage = messages.first();
                 if (lastMessage && lastMessage.author.id === discordClient.user.id) {
@@ -106,8 +115,18 @@ async function autoUpdateStatus(message) {
         message.channel.send('自動更新已啟動。');
     }
 }
-function createStatusEmbed(serverStatus) {
-    return new EmbedBuilder()
+
+async function createStatusEmbed(serverStatus) {
+    let attachment = null;
+    if (serverStatus.favicon) {
+        const base64Data = serverStatus.favicon.replace(/^data:image\/png;base64,/, "");
+        const buffer = Buffer.from(base64Data, 'base64');
+        const filePath = path.join(__dirname, 'server_icon.png');
+        fs.writeFileSync(filePath, buffer);
+        attachment = new AttachmentBuilder(filePath, { name: 'server_icon.png' });
+    }
+
+    const embed = new EmbedBuilder()
         .setTitle(SERVER_NAME)
         .setDescription(serverStatus ? serverStatus.motd : "伺服器不在線")
         .addFields(
@@ -117,7 +136,15 @@ function createStatusEmbed(serverStatus) {
         )
         .setColor(0x00FFFF)
         .setFooter({ text: `獲取時間: ${new Date(Date.now() + 8 * 60 * 60 * 1000).toLocaleTimeString()}` });
+
+    if (attachment) {
+        embed.setImage('attachment://server_icon.png');
+        return { embeds: [embed], files: [attachment] };
+    }
+
+    return { embeds: [embed] };
 }
+
 function loadScripts() {
     const scriptsFolder = path.join(__dirname, 'scripts');
     fs.readdirSync(scriptsFolder).forEach(file => {
@@ -135,6 +162,7 @@ function loadScripts() {
         }
     });
 }
+
 async function registerSlashCommands() {
     const rest = new REST({ version: '10' }).setToken(DISCORD_TOKEN);
     try {
@@ -147,6 +175,7 @@ async function registerSlashCommands() {
         console.error('註冊斜線指令時出錯:', error);
     }
 }
+
 discordClient.on('messageCreate', async (message) => {
     if (message.author.bot) return;
     for (const scriptName in discordClient.scriptHandlers) {
@@ -155,8 +184,8 @@ discordClient.on('messageCreate', async (message) => {
     }
     if (message.content === '!status') {
         const serverStatus = await queryServerStatus();
-        const embed = createStatusEmbed(serverStatus);
-        message.channel.send({ embeds: [embed] });
+        const { embeds, files } = await createStatusEmbed(serverStatus);
+        message.channel.send({ embeds, files });
     }
     if (message.content.startsWith('!console')) {
         if (!ADMIN_IDS.includes(message.author.id)) {
@@ -183,6 +212,7 @@ discordClient.on('messageCreate', async (message) => {
         message.channel.send('腳本已重新載入。');
     }
 });
+
 // 斜線指令處理
 discordClient.on('interactionCreate', async (interaction) => {
     if (!interaction.isCommand()) return;
@@ -193,4 +223,5 @@ discordClient.on('interactionCreate', async (interaction) => {
         await interaction.reply(`機器人延遲：${latency}ms`);
     }
 });
+
 discordClient.login(DISCORD_TOKEN);
