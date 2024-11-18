@@ -1,8 +1,9 @@
 require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
+const axios = require('axios');
 const { Client, GatewayIntentBits, Partials, EmbedBuilder, REST, Routes, AttachmentBuilder } = require('discord.js');
-const { Rcon } = require('rcon-client');
 const minecraftServerUtil = require('minecraft-server-util');
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
@@ -53,19 +54,15 @@ async function queryServerStatus() {
 }
 
 async function rconCommand(command) {
-    const rcon = new Rcon({ host: SERVER_IP, port: RCON_PORT, password: RCON_PASSWORD });
     try {
-        await rcon.connect();
-        const response = await rcon.send(command);
+        const rcon = await minecraftServerUtil.RCON.connect(SERVER_IP, RCON_PORT, RCON_PASSWORD);
+        const response = await rcon.run(command);
+        rcon.close();
         return response.length > 4000 ? '回應超過Discord字符數限制' : `\`\`\`${response}\`\`\``;
     } catch (error) {
         console.error('執行RCON命令時發生錯誤:', error);
         const errorMessage = `RCON命令執行錯誤: ${error.message}`;
         return errorMessage.length > 4000 ? '錯誤訊息超過Discord字符數限制' : `\`\`\`${errorMessage}\`\`\``;
-    } finally {
-        if (rcon.connected) {
-            rcon.end();
-        }
     }
 }
 
@@ -219,6 +216,37 @@ discordClient.on('messageCreate', async (message) => {
     if (message.content === '!ls') {
         const scriptNames = Object.keys(discordClient.scriptHandlers);
         message.channel.send(`已載入的腳本: ${scriptNames.join(', ')}`);
+    }
+    if (message.content === '!botstatus') {
+        const uptime = process.uptime();
+        const uptimeString = `${Math.floor(uptime / 3600)}h ${Math.floor((uptime % 3600) / 60)}m ${Math.floor(uptime % 60)}s`;
+        const latency = Date.now() - message.createdTimestamp;
+
+        const interfaces = os.networkInterfaces();
+        const localIP = interfaces.eth0 ? interfaces.eth0[0].address : 'N/A';
+
+        try {
+            const response = await axios.get('https://api.ipify.org?format=json');
+            const externalIP = response.data.ip;
+
+            const embed = new EmbedBuilder()
+                .setTitle('機器人狀態')
+                .setThumbnail(discordClient.user.avatarURL())
+                .addFields(
+                    { name: '機器人 ID', value: discordClient.user.id, inline: true },
+                    { name: 'Discord 伺服器 ID', value: message.guild.id, inline: true },
+                    { name: '運行時間', value: uptimeString, inline: true },
+                    { name: '區域網 IP', value: localIP, inline: true },
+                    { name: '外網 IP', value: externalIP, inline: true },
+                    { name: '延遲', value: `${latency}ms`, inline: true }
+                )
+                .setColor(0x00FFFF)
+                .setFooter({ text: `獲取時間: ${new Date(Date.now() + 8 * 60 * 60 * 1000).toLocaleTimeString()}` });
+            message.channel.send({ embeds: [embed] });
+        } catch (error) {
+            console.error('獲取外網 IP 時發生錯誤:', error);
+            message.channel.send('獲取外網 IP 時發生錯誤。');
+        }
     }
 });
 
