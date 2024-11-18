@@ -60,9 +60,12 @@ async function rconCommand(command) {
         return response.length > 4000 ? '回應超過Discord字符數限制' : `\`\`\`${response}\`\`\``;
     } catch (error) {
         console.error('執行RCON命令時發生錯誤:', error);
-        return `RCON命令執行錯誤: ${error}`;
+        const errorMessage = `RCON命令執行錯誤: ${error.message}`;
+        return errorMessage.length > 4000 ? '錯誤訊息超過Discord字符數限制' : `\`\`\`${errorMessage}\`\`\``;
     } finally {
-        rcon.end();
+        if (rcon.connected) {
+            rcon.end();
+        }
     }
 }
 
