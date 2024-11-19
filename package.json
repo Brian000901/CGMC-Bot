@@ -6,6 +6,7 @@
     "fs": "^0.0.1-security",
     "minecraft-server-util": "^5.4.4",
     "path": "^0.12.7",
-    "rcon-client": "^4.2.5"
+    "rcon-client": "^4.2.5",
+    "winston": "^3.17.0"
   }
 }
