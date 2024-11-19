@@ -230,7 +230,7 @@ discordClient.on('messageCreate', async (message) => {
             const externalIP = response.data.ip;
 
             const embed = new EmbedBuilder()
-                .setTitle('機器人狀態')
+                .setTitle('機器人資訊')
                 .setThumbnail(discordClient.user.avatarURL())
                 .addFields(
                     { name: '機器人 ID', value: discordClient.user.id, inline: true },
