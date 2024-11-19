@@ -5,6 +5,8 @@ const os = require('os');
 const axios = require('axios');
 const { Client, GatewayIntentBits, Partials, EmbedBuilder, REST, Routes, AttachmentBuilder } = require('discord.js');
 const minecraftServerUtil = require('minecraft-server-util');
+const winston = require('winston');
+
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
 const GUILD_ID = process.env.GUILD_ID;
@@ -20,6 +22,46 @@ if (!DISCORD_TOKEN || !SERVER_IP || !SERVER_PORT || !RCON_PORT || !RCON_PASSWORD
     process.exit(1);
 }
 
+// Logger setup
+const logFileName = `logs/${new Date().toISOString().replace(/[:.]/g, '-')}.log`;
+const logger = winston.createLogger({
+    level: 'info',
+    format: winston.format.combine(
+        winston.format.timestamp({ format: 'HH:mm:ss' }), // Console format
+        winston.format.printf(({ timestamp, level, message }) => {
+            const colorizer = winston.format.colorize();
+            return `[${timestamp}] [Main/${colorizer.colorize(level, level.toUpperCase())}]: ${message}`;
+        })
+    ),
+    transports: [
+        new winston.transports.Console(),
+        new winston.transports.File({ filename: logFileName, format: winston.format.combine(
+            winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }), // Log file format
+            winston.format.printf(({ timestamp, level, message }) => {
+                return `[${timestamp}] [Main/${level.toUpperCase()}]: ${message}`;
+            })
+        )})
+    ]
+});
+
+logger.info(`主程式已經以 PID ${process.pid} 啟動`);
+
+// Function to delete log files older than one week
+const deleteOldLogFiles = () => {
+    const logDirectory = path.join(__dirname, 'logs');
+    const files = fs.readdirSync(logDirectory);
+    const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+
+    files.forEach(file => {
+        const filePath = path.join(logDirectory, file);
+        const stats = fs.statSync(filePath);
+        if (stats.mtime.getTime() < oneWeekAgo) {
+            fs.unlinkSync(filePath);
+            logger.info(`已刪除舊的日誌文件: ${file}`);
+        }
+    });
+};
+
 const discordClient = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -32,7 +74,7 @@ const discordClient = new Client({
 discordClient.scriptHandlers = {};
 
 discordClient.once('ready', async () => {
-    console.log(`已登入為${discordClient.user.tag}`);
+    logger.info(`已登入為${discordClient.user.tag}`);
     loadScripts();
     await registerSlashCommands();
 });
@@ -48,7 +90,7 @@ async function queryServerStatus() {
             favicon: result.favicon // Assuming this is where the base64 image is stored
         };
     } catch (error) {
-        console.error('查詢伺服器狀態時發生錯誤:', error);
+        logger.error('查詢伺服器狀態時發生錯誤:', error);
         return null;
     }
 }
@@ -60,7 +102,7 @@ async function rconCommand(command) {
         rcon.close();
         return response.length > 4000 ? '回應超過Discord字符數限制' : `\`\`\`${response}\`\`\``;
     } catch (error) {
-        console.error('執行RCON命令時發生錯誤:', error);
+        logger.error('執行RCON命令時發生錯誤:', error);
         const errorMessage = `RCON命令執行錯誤: ${error.message}`;
         return errorMessage.length > 4000 ? '錯誤訊息超過Discord字符數限制' : `\`\`\`${errorMessage}\`\`\``;
     }
@@ -146,6 +188,7 @@ async function createStatusEmbed(serverStatus) {
 }
 
 function loadScripts() {
+    logger.info('正在重新載入腳本...');
     const scriptsFolder = path.join(__dirname, 'scripts');
     fs.readdirSync(scriptsFolder).forEach(file => {
         if (file.endsWith('.js')) {
@@ -155,14 +198,16 @@ function loadScripts() {
                 const script = require(scriptPath);
                 if (typeof script === 'function') {
                     discordClient.scriptHandlers[file] = script;
+                    logger.info(`已成功載入腳本: ${file}`);
                 } else {
-                    console.warn(`腳本${file}沒有導出為函數，將被忽略`);
+                    logger.warn(`腳本${file}沒有導出為函數，將被忽略`);
                 }
             } catch (error) {
-                console.error(`載入腳本${file}時出錯:`, error);
+                logger.error(`載入腳本${file}時出錯:`, error);
             }
         }
     });
+    logger.info('已重新載入所有腳本');
 }
 
 async function registerSlashCommands() {
@@ -172,9 +217,9 @@ async function registerSlashCommands() {
             Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
             { body: [{ name: 'ping', description: '看看機器人是否活著' }] }
         );
-        console.log('斜線指令註冊成功');
+        logger.info('斜線指令註冊成功');
     } catch (error) {
-        console.error('註冊斜線指令時出錯:', error);
+        logger.error('註冊斜線指令時出錯:', error);
     }
 }
 
@@ -244,7 +289,7 @@ discordClient.on('messageCreate', async (message) => {
                 .setFooter({ text: `獲取時間: ${new Date(Date.now() + 8 * 60 * 60 * 1000).toLocaleTimeString()}` });
             message.channel.send({ embeds: [embed] });
         } catch (error) {
-            console.error('獲取外網 IP 時發生錯誤:', error);
+            logger.error('獲取外網 IP 時發生錯誤:', error);
             message.channel.send('獲取外網 IP 時發生錯誤。');
         }
     }
@@ -262,3 +307,18 @@ discordClient.on('interactionCreate', async (interaction) => {
 });
 
 discordClient.login(DISCORD_TOKEN);
+
+// Log exit status
+process.on('exit', (code) => {
+    logger.info(`主程式以狀態碼 ${code} 退出`);
+});
+
+process.on('SIGINT', () => {
+    logger.info('捕獲到 SIGINT 信號，進行退出...');
+    process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+    logger.info('捕獲到 SIGTERM 信號，進行退出...');
+    process.exit(0);
+});
