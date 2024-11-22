@@ -4,8 +4,8 @@ const path = require('path');
 const os = require('os');
 const axios = require('axios');
 const { Client, GatewayIntentBits, Partials, EmbedBuilder, REST, Routes, AttachmentBuilder } = require('discord.js');
-const minecraftServerUtil = require('minecraft-server-util');
 const winston = require('winston');
+const rcon = require('rcon-client');
 
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
@@ -81,13 +81,13 @@ discordClient.once('ready', async () => {
 
 async function queryServerStatus() {
     try {
-        const result = await minecraftServerUtil.status(SERVER_IP, SERVER_PORT);
+        const result = await axios.get(`https://api.mcstatus.io/v2/status/java/${SERVER_IP}:${SERVER_PORT}`);
         return {
-            version: result.version.name,
-            online: result.players.online,
-            max: result.players.max,
-            motd: result.motd.clean,
-            favicon: result.favicon // Assuming this is where the base64 image is stored
+            version: result.data.version.name_clean,
+            online: result.data.players.online,
+            max: result.data.players.max,
+            motd: result.data.motd.clean,
+            icon: result.data.icon // Assuming this is where the base64 image is stored
         };
     } catch (error) {
         logger.error('查詢伺服器狀態時發生錯誤:', error);
@@ -97,9 +97,13 @@ async function queryServerStatus() {
 
 async function rconCommand(command) {
     try {
-        const rcon = await minecraftServerUtil.RCON.connect(SERVER_IP, RCON_PORT, RCON_PASSWORD);
-        const response = await rcon.run(command);
-        rcon.close();
+        const conn = await rcon.Rcon.connect({
+            host: SERVER_IP,
+            port: RCON_PORT,
+            password: RCON_PASSWORD
+        });
+        const response = await conn.send(command);
+        conn.end();
         return response.length > 4000 ? '回應超過Discord字符數限制' : `\`\`\`${response}\`\`\``;
     } catch (error) {
         logger.error('執行RCON命令時發生錯誤:', error);
@@ -159,9 +163,13 @@ async function autoUpdateStatus(message) {
 }
 
 async function createStatusEmbed(serverStatus) {
+    if (!serverStatus) {
+        throw new Error('Server status is null');
+        logger.error('無法創建伺服器狀態嵌入，因為伺服器狀態為空');
+    }
     let attachment = null;
-    if (serverStatus.favicon) {
-        const base64Data = serverStatus.favicon.replace(/^data:image\/png;base64,/, "");
+    if (serverStatus.icon) {
+        const base64Data = serverStatus.icon.replace(/^data:image\/png;base64,/, "");
         const buffer = Buffer.from(base64Data, 'base64');
         const filePath = path.join(__dirname, 'server_icon.png');
         fs.writeFileSync(filePath, buffer);
