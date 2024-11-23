@@ -163,8 +163,8 @@ async function autoUpdateStatus(message) {
 
 async function createStatusEmbed(serverStatus) {
     if (!serverStatus) {
-        throw new Error('Server status is null');
         logger.error('無法創建伺服器狀態嵌入，因為伺服器狀態為空');
+        throw new Error('Server status is null');
     }
     let attachment = null;
     if (serverStatus.icon) {
