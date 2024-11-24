@@ -5,6 +5,7 @@ const axios = require('axios');
 const { Client, GatewayIntentBits, Partials, EmbedBuilder, REST, Routes, AttachmentBuilder } = require('discord.js');
 const winston = require('winston');
 const rcon = require('rcon-client');
+const os = require('os');
 
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
