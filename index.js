@@ -18,7 +18,7 @@ const ADMIN_IDS = process.env.ADMIN_ID.split(',').map(id => id.trim());
 const SERVER_NAME = process.env.SERVER_NAME || "Minecraft Server";
 
 if (!DISCORD_TOKEN || !SERVER_IP || !SERVER_PORT || !RCON_PORT || !RCON_PASSWORD || !ADMIN_IDS) {
-    console.error('請檢查.env檔案，確認所有變量均已設置');
+    console.error('請檢查.env檔案，確認所有環境變數均已設定');
     process.exit(1);
 }
 
@@ -108,7 +108,7 @@ async function rconCommand(command) {
     } catch (error) {
         logger.error('執行RCON命令時發生錯誤:', error);
         const errorMessage = `RCON命令執行錯誤: ${error.message}`;
-        return errorMessage.length > 4000 ? '錯誤訊息超過Discord字符數限制' : `\`\`\`${errorMessage}\`\`\``;
+        return errorMessage.length > 4000 ? '錯誤訊息超過Discord字元數限制' : `\`\`\`${errorMessage}\`\`\``;
     }
 }
 
@@ -244,7 +244,7 @@ discordClient.on('messageCreate', async (message) => {
     }
     if (message.content.startsWith('!console')) {
         if (!ADMIN_IDS.includes(message.author.id)) {
-            return message.reply('您無權執行此命令。');
+            return message.reply('你沒有權限執行此指令。');
         }
         const command = message.content.slice('!console'.length).trim();
         if (!command) {
@@ -255,13 +255,13 @@ discordClient.on('messageCreate', async (message) => {
     }
     if (message.content.startsWith('!autoupdate')) {
         if (!ADMIN_IDS.includes(message.author.id)) {
-            return message.reply('您無權執行此命令。');
+            return message.reply('你沒有權限執行此指令。');
         }
         autoUpdateStatus(message);
     }
     if (message.content === '!reload') {
         if (!ADMIN_IDS.includes(message.author.id)) {
-            return message.reply('您無權執行此命令。');
+            return message.reply('你沒有權限執行此指令。');
         }
         loadScripts();
         message.channel.send('腳本已重新載入。');
@@ -290,15 +290,15 @@ discordClient.on('messageCreate', async (message) => {
                     { name: 'Discord 伺服器 ID', value: message.guild.id, inline: true },
                     { name: '運行時間', value: uptimeString, inline: true },
                     { name: '區域網 IP', value: localIP, inline: true },
-                    { name: '外網 IP', value: externalIP, inline: true },
+                    { name: '外部 IP', value: externalIP, inline: true },
                     { name: '延遲', value: `${latency}ms`, inline: true }
                 )
                 .setColor(0x00FFFF)
                 .setFooter({ text: `獲取時間: ${new Date(Date.now() + 8 * 60 * 60 * 1000).toLocaleTimeString()}` });
             message.channel.send({ embeds: [embed] });
         } catch (error) {
-            logger.error('獲取外網 IP 時發生錯誤:', error);
-            message.channel.send('獲取外網 IP 時發生錯誤。');
+            logger.error('獲取外部 IP 時發生錯誤:', error);
+            message.channel.send('獲取外部 IP 時發生錯誤。');
         }
     }
 });
