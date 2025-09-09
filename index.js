@@ -150,7 +150,7 @@ async function autoUpdateStatus(message) {
                 const embed = await createStatusEmbed(serverStatus);
                 const messages = await message.channel.messages.fetch({ limit: 1 });
                 const lastMessage = messages.first();
-                if (lastMessage && lastMessage.author.id === discordClient.user.id) {
+                if (lastMessage && lastMessage.author.id === discordClient.user.id && lastMessage.embeds) {
                     await lastMessage.edit({ embeds: [embed] });
                 } else {
                     await message.channel.send({ embeds: [embed] });
