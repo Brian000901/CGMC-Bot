@@ -180,7 +180,7 @@ async function createStatusEmbed(serverStatus) {
         .setTitle(SERVER_NAME)
         .setDescription(serverStatus ? serverStatus.motd : "伺服器不在線")
         .addFields(
-            { name: "IP", value: SERVER_IP, inline: true },
+            { name: "IP", value: `${SERVER_IP}:{SERVER_PORT}, inline: true },
             { name: "版本", value: serverStatus ? serverStatus.version : "N/A", inline: true },
             { name: "在線人數", value: serverStatus ? `${serverStatus.online}/${serverStatus.max}` : "0/0", inline: true }
         )
